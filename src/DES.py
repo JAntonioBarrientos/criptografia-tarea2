@@ -1,4 +1,11 @@
 class DES:
+    """
+    Clase que implementa el algoritmo de cifrado DES (Data Encryption Standard).
+    
+    Este algoritmo utiliza permutaciones y sustituciones para cifrar y descifrar datos 
+    de 64 bits utilizando una clave de 64 bits.
+    """
+
     # Tablas de permutación y sustitución utilizadas por el algoritmo DES
     IP = [58, 50, 42, 34, 26, 18, 10, 2,
           60, 52, 44, 36, 28, 20, 12, 4,
@@ -104,21 +111,54 @@ class DES:
              1, 2, 2, 2, 2, 2, 2, 1]
 
     def __init__(self, key):
+        """
+        Inicializa la instancia de DES con una clave específica.
+
+        :param key: Clave de 8 bytes para el cifrado.
+        :raises ValueError: Si la clave no es de 8 caracteres.
+        """
         if len(key) != 8:
             raise ValueError("La clave debe ser de 8 bytes.")
         self.key = key
         self.subkeys = self.generate_keys()
 
     def permute(self, block, table):
+        """
+        Aplica una permutación a un bloque de bits según una tabla dada.
+
+        :param block: Lista de bits a permutar.
+        :param table: Tabla de permutación.
+        :return: Lista de bits permutados.
+        """
         return [block[i -1] for i in table]
 
     def shift_left(self, k, n):
+        """
+        Realiza un desplazamiento circular a la izquierda en una lista de bits.
+
+        :param k: Lista de bits.
+        :param n: Número de posiciones a desplazar.
+        :return: Lista de bits desplazada.
+        """
         return k[n:] + k[:n]
 
     def xor(self, a, b):
+        """
+        Realiza una operación XOR entre dos listas de bits.
+
+        :param a: Primera lista de bits.
+        :param b: Segunda lista de bits.
+        :return: Lista resultante de la operación XOR.
+        """
         return [i ^ j for i, j in zip(a, b)]
 
     def sbox_substitution(self, bits):
+        """
+        Aplica las S-boxes al bloque de bits.
+
+        :param bits: Lista de 48 bits.
+        :return: Lista de 32 bits después de la sustitución.
+        """
         result = []
         for i in range(8):
             block = bits[i*6:(i+1)*6]
@@ -130,6 +170,11 @@ class DES:
         return result
 
     def generate_keys(self):
+        """
+        Genera las subclaves para cada ronda del algoritmo DES.
+
+        :return: Lista de 16 subclaves, cada una de 48 bits.
+        """
         key_bits = [int(x) for x in f"{int.from_bytes(self.key.encode('ascii'), 'big'):064b}"]
         key_permuted = self.permute(key_bits, self.PC_1)
         C = key_permuted[:28]
@@ -144,6 +189,13 @@ class DES:
         return subkeys
 
     def f(self, R, K):
+        """
+        Función de mezcla del DES que expande, mezcla y permuta los bits.
+
+        :param R: Lista de 32 bits de la mitad derecha del bloque.
+        :param K: Subclave de 48 bits para la ronda actual.
+        :return: Lista de 32 bits después de aplicar la función f.
+        """
         R_expanded = self.permute(R, self.E)
         xor_result = self.xor(R_expanded, K)
         sbox_result = self.sbox_substitution(xor_result)
@@ -151,6 +203,12 @@ class DES:
         return f_result
 
     def encrypt_block(self, block):
+        """
+        Cifra un bloque de 8 bytes utilizando el algoritmo DES.
+
+        :param block: Bloque de 8 bytes a cifrar.
+        :return: Bloque cifrado de 8 bytes.
+        """
         block_bits = [int(x) for x in f"{int.from_bytes(block, 'big'):064b}"]
         block_permuted = self.permute(block_bits, self.IP)
         L = block_permuted[:32]
@@ -165,6 +223,12 @@ class DES:
         return output_int.to_bytes(8, 'big')
 
     def decrypt_block(self, block):
+        """
+        Descifra un bloque de 8 bytes utilizando el algoritmo DES.
+
+        :param block: Bloque cifrado de 8 bytes a descifrar.
+        :return: Bloque descifrado de 8 bytes.
+        """
         block_bits = [int(x) for x in f"{int.from_bytes(block, 'big'):064b}"]
         block_permuted = self.permute(block_bits, self.IP)
         L = block_permuted[:32]
@@ -179,16 +243,35 @@ class DES:
         return output_int.to_bytes(8, 'big')
 
     def pad(self, data):
+        """
+        Aplica relleno al texto plano para que su longitud sea múltiplo de 8 bytes.
+
+        :param data: Datos en bytes a rellenar.
+        :return: Datos rellenos en bytes.
+        """
         pad_len = 8 - (len(data) % 8)
         return data + bytes([pad_len]*pad_len)
 
     def unpad(self, data):
+        """
+        Elimina el relleno de los datos descifrados.
+
+        :param data: Datos en bytes con relleno.
+        :return: Datos originales sin relleno en bytes.
+        :raises ValueError: Si el relleno es inválido.
+        """
         pad_len = data[-1]
         if pad_len < 1 or pad_len > 8:
             raise ValueError("Padding inválido.")
         return data[:-pad_len]
 
     def encrypt(self, plaintext):
+        """
+        Cifra un texto plano utilizando DES en modo ECB.
+
+        :param plaintext: Texto plano en formato string.
+        :return: Texto cifrado en bytes.
+        """
         data = plaintext.encode('ascii')
         data = self.pad(data)
         ciphertext = b''
@@ -198,6 +281,12 @@ class DES:
         return ciphertext
 
     def decrypt(self, ciphertext):
+        """
+        Descifra un texto cifrado utilizando DES en modo ECB.
+
+        :param ciphertext: Texto cifrado en bytes.
+        :return: Texto descifrado en formato string.
+        """
         data = b''
         for i in range(0, len(ciphertext), 8):
             block = ciphertext[i:i+8]
@@ -208,9 +297,8 @@ class DES:
 if __name__ == "__main__":
     key = 'MiClave1'  # La clave debe ser de 8 caracteres
     des = DES(key)
-    mensaje = 'Por fin salio el cifradooo :D' # El mensaje a cifrar en ASCII
+    mensaje = 'Por fin salio el cifradooo :D'  # El mensaje a cifrar en ASCII
     cifrado = des.encrypt(mensaje)
     print('Cifrado (hex):', cifrado.hex())
     descifrado = des.decrypt(cifrado)
     print('Descifrado:', descifrado)
-
