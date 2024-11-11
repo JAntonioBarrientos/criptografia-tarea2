@@ -1,6 +1,6 @@
 def es_primo(n):
     """
-    Determina si un número 'n' es primo.
+    Determina si un número 'n' es primo por medio de fuerza bruta.
 
     Parámetros:
     n (int): El número a verificar.
